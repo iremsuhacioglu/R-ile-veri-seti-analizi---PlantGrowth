@@ -1,0 +1,197 @@
+
+# 1. Data Seti - PlantGrowth
+
+```{r}
+library(readxl)
+PlantGrowth <- read_excel("2.SINIF/2. SINIF 2. DÖNEM/isttistik/BigData24/PlantGrowth.xlsx")
+View(PlantGrowth)
+
+```
+
+## Tanımlayıcı İstatistik - 1
+
+"Plantgrowth" veri seti, bitki büyüme oranlarını ölçmek için yapılmış bir deneyde elde edilen verileri içeren bir R veri setidir. Bu veri seti, R programlama dilinde örnek veri setİ olarak sıklıkla kullanılmaktadır. Ancak biz bu data setini R'dan direkt almak yerine veri seti üzerinde çalışma yapmış bazı kaynakların elde ettiği başka değişken verilerini de projemize dahil etmek için veri setimizi genişlettik.
+
+"Plantgrowth" veri setinde, 30 (aynı türde) bitki örneği ve üç farklı gübre cinsi kullanılarak deneydeki değişkenlerin bitkiler üzerindeki büyüme etkileri incelenmiştir.
+
+1\. "ctrl" (kontrol): Hiçbir gübre uygulanmamış bitkiler (kontrol grubu).
+
+2\. "trt1" (tedavi 1): Verilen bir gübre türü ile beslenmiş bitkiler.
+
+3\. "trt2" (tedavi 2): Verilen diğer bir gübre türü ile beslenmiş bitkiler.
+
+4\. "Water"(Su): Bitkilere verilen toplam su miktarları.
+
+5\. "Leaves"(Yaprak sayısı): Çiçeklerin yaprak sayıları.
+
+Herbir bitki örneği için büyüme oranı (g) ölçülmüştür ve veri setinde bu büyüme oranları yer almaktadır.
+
+```{r}
+str(PlantGrowth)
+```
+
+### Grafikler - 1
+
+İlk olarak bitkilerin büyüme oranları ile gübreleme arasındaki bağlantıyı incelemek için gübre tipleri ve bitki uzunluklarını bir çubuk grafiği ile görselleştirdik. Bu grafikten de anlaşılacağı üzere trt2 gübresi bitkilerin uzamasını pozitif yönde etkilemektedir.
+
+```{r}
+library(ggplot2)
+ggplot(PlantGrowth, aes(x=group, y= weight)) + 
+  geom_col(aes(color=group, fill = group))
+```
+
+Aşağıdaki kutu grafiğinde de görüleceği üzere trt2 gübresi verilen bitkilerde (diğer değişkenlerden bağımsız olarak) daha çok büyüme gözlemlenmiştir. Bununla birlikte trt1 gübresi verilen bitkilerin boyu diğerlerinden kısa kalmıştır.
+
+```{r}
+boxplot(weight~group, data=PlantGrowth, col="green",xlab = "Group",ylab = "Weight")
+```
+
+Aşağıdaki serpme grafiğinde su ve uzunluk değişkenleri arasındaki bağlantıyı inceledik. Grafikte de görüleceği üzere 2 değişken arasında pozitif ve nispeten güçlü bir korelasyon vardır. Yani diğer değişkenlerden bağımsız incelendiğinde daha çok sulanan bitki daha çok uzamaktadır sonucuna varılabilir.
+
+```{r}
+plot(PlantGrowth$water~PlantGrowth$weight,xlab="su",ylab="uzunluk")
+```
+
+Yukarıdaki grafiğin korelasyon değeri aşağıdaki gibidir.
+
+```{r}
+cor(PlantGrowth$water,PlantGrowth$weight)
+```
+
+Aşağıdaki grafikte su ve uzunluk değişkenlerini gübre değişkenini de hesaba katarak irdeledik. Bu grafikten şu sonuçları çıkardık:
+
+Diğer değişkenlerden bağımsız olarak bitkilerin büyümesinde maksimum verim sağlayan trt2 değişkeni, su değişkeni hesaba katıldığında da verimliliğini korumaktadır.
+
+```{r}
+ggplot(data=PlantGrowth,aes(x=water,y=weight,color=group))+geom_point()
+```
+
+Aşağıdaki grafikte gübre miktarları ile uygulanan su miktarları arasındaki bağlantıyı inceledik. Bu grafikten elde ettiğimiz sonuçlara göre hiç gübre uygulanmayan bitkiler, gübre uygulananlara göre daha fazla suya ihtiyaç duyuyor. Bununla birlikte trt2 gübresi trt1 gübresine göre daha çok suya ihtiyaç duyuyor.
+
+```{r}
+boxplot(water~group, data=PlantGrowth, col="green")
+```
+
+Aşağıdaki grafikte bitkilerin uzunlukları ile yaprak sayıları arasındaki bağlantıyı inceledik ve iki değişken arasında zayıf ve negatif bir korelasyon olduğunu gördük.
+
+```{r}
+plot(PlantGrowth$weight~PlantGrowth$leaves,xlab="Yapraklar",ylab = "Uzunluk")
+```
+
+Grafiğin korelasyon değeri:
+
+```{r}
+cor(PlantGrowth$weight,PlantGrowth$leaves)
+```
+
+Aşağıdaki kutu grafiğinde hiç gübre verilmeyen bitkilerin yaprak sayılarını büyük bir aralık içerisinde oldukça düşük bir değerde olduğunu, bununla birlikte trt2 gübresi yaprak sayısında anlamlı bir değişim elde edilmesine sebep olamazken trt1 gübresi yaprak sayısında büyük bir etki yarattığını gözlemledik.
+
+```{r}
+boxplot(leaves~group, data=PlantGrowth, col="green")
+```
+
+##  Hipotez Testleri - 1
+
+```{r}
+ctrl_weight=PlantGrowth$weight[PlantGrowth$group=="ctrl"]
+trt1_weight=PlantGrowth$weight[PlantGrowth$group=="trt1"]
+trt2_weight=PlantGrowth$weight[PlantGrowth$group=="trt2"]
+```
+
+İlk olarak shapiro testi ile T testi uygulayacağımız değişkenlerin normal dağılıma uygunluklarını inceledik.
+
+```{r}
+shapiro.test(trt2_weight)
+shapiro.test(ctrl_weight)
+shapiro.test(trt1_weight)
+```
+
+```{r}
+var.test(x=ctrl_weight,y=trt1_weight,ratio = 1,alternative = "t")
+```
+
+Tanımlı veri setimizin varyansları arasında anlamlı bir fark çıkmadığı için t-testimizde varyansları eşit kabul edebiliriz.
+
+-   Kontrol grubu(hiç gübre verilmeyen grup) ile trt1 grubunun boyları arasında %5 anlam düzeyinde, anlamlı bir fark var mıdır?
+
+**H0:** kontrol grubunun boyları ile trt1 grubunun boyları arasında anlamlı bir fark yoktur.
+
+**H1:** Kontrol gubu ile trt1 grubu boyları arasında anlamlı bir fark vardır.
+
+```{r}
+t.test(ctrl_weight,trt1_weight,alternative = "t",conf.level=0.95,var.equal = FALSE,paired = TRUE)
+```
+
+Görüldüğü üzere **H0 reddedilemez durumdadır.**
+
+Hipotezi biraz daha değiştirip doğruluğunu kontrol etmek istersek. Gübre verilen bitkilerin boylarında
+
+pozitif yönde bir değişim olmuş mudur diye sorarsak cevabımız netleşiyor.
+
+-   Anlam düzeyimiz %5 iken trt1 gübresinin uygulandığı bitkilerin boyları hiç gübre verilmeyen bitkilerin boylarından uzundur.
+
+**H0:** trt1 grubunun boyları = kontrol gurubu boyları.
+
+**H1:** trt1 grubunun boyları \>kontrol grubunun boyları.
+
+```{r}
+t.test(trt1_weight,ctrl_weight,alternative = "g",conf.level = 0.95,var.equal = FALSE,paired = TRUE)
+```
+
+T testimizin p değeri 0.82 olarak çıkar bu da H1 in reddedildiğini gösterir. Yani trt1 gübremiz bitkilerin boylarında anlamlı bir değişim sağlamamıştır.
+
+Kutu grafiğimizde gördüğümüz boy uzunlukları trt1 ve trt2 grubu için anlamlı bir farka sahip gibi görülmektedir (trt2 grubunun boylarının daha uzun olduğu açıkça görülür). Bunu test etmek için bit t test oluşturalım. %5 anlam düzeyinde.
+
+**H0:** trt2 gübresi uygulanan bitki boyları ile trt1 gübresi uygulanan bitki boylarına eşittir .
+
+**H1:** trt2 grubunun boyları trt1 grubun boylarından büyük müdür?
+
+```{r}
+var.test(x=trt1_weight,y=trt2_weight,ratio = 1,alternative = "t")
+```
+
+```{r}
+t.test(trt2_weight,trt1_weight,alternative = "g",conf.level = 0.95,paired = TRUE,var.equal = FALSE)
+```
+
+H0 ret sonucunu görürüz. Buna göre trt2 grubu uygulanan bitkilerin uzunluğu daha fazladır.
+
+```{r}
+ctrl_leaves=PlantGrowth$leaves[PlantGrowth$group=="ctrl"]
+trt1_leaves=PlantGrowth$leaves[PlantGrowth$group=="trt1"]
+9
+```
+
+Aşağıdaki testte, incelediğimiz veri setlerinin normalliğe uygun olduğunu gördük.
+
+```{r}
+shapiro.test(trt1_leaves)
+shapiro.test(ctrl_leaves)
+```
+
+Aşağıda uyguladığımız F testi ile varyanslar arasında fark olduğunu tespit ettik.
+
+```{r}
+var.test(x=trt1_leaves,y=ctrl_leaves,ratio = 1,alternative = "t")
+```
+
+Araştırmalar sonucu trt2 gübresi uygulanan bitkilerde yaprak sayıları yaklaşık %30oranında artış gözlemlenmiştir. Bu bulguya göre:
+
+**H0:** trt1 grubunun yaprak sayısı kontrol grubunun yaprak sayısına eşittir.
+
+**H1:** trt1 grubunun yaprak sayısı kontrol grubunun yaprak sayısından büyüktür.
+
+```{r}
+t.test(trt1_leaves,ctrl_leaves,alternative = "g",conf.level = 0.95,paired = FALSE,var.equal = FALSE)
+```
+
+**H0** ret. Buna göre kullandığımız gübre türü yaprak sayısını dolaylı olarak etkileyebilir. **H1 reddedilemez.**
+
+## 1. DPlantGrowth Sonuçlar:
+
+-   Trt1 gübresi herhangi bir başka değişkende anlamlı bir farklılık yokken bitkiler üzerinde herhangi bir anlamlı sonuç oluşturmamaktadır ve kontrol değişkeni olarak kabul edilen gübre verilmeyen bitkiler ile trt1 gübresi verilen bitkiler arasında anlamlı bir boy farklı oluşmamaktadır.
+
+-   Trt2 gübresi uygulanan bitkilerin boyları trt1 gübresi uygulanan ve hiçbir gübre uygulanmayan bitkilerin boylarından uzundur, yani trt2 gübresi bitkiler üzerinde pozitif bir büyüme etkisine sebep olmaktadır.
+
+-   Kullanılan gübre türü yaprak sayısını dolaylı olarak etkileyebilir.
+
